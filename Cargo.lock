@@ -36,6 +36,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-heroku-template"
+version = "0.1.0"
+dependencies = [
+ "actix-web",
+]
+
+[[package]]
 name = "actix-http"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1198,13 +1205,6 @@ checksum = "52e44394d2086d010551b14b53b1f24e31647570cd1deb0379e2c21b329aba00"
 dependencies = [
  "hostname",
  "quick-error",
-]
-
-[[package]]
-name = "rust-buildpack-example-actix"
-version = "0.1.0"
-dependencies = [
- "actix-web",
 ]
 
 [[package]]
