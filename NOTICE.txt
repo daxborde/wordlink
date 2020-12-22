@@ -1,0 +1,9 @@
+Copyright 2020 Dax Borde
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+
+-----------------------------------------------------------------
+
+/src/main.rs has been modified from https://github.com/emk/rust-buildpack-example-actix.
+    Copyright https://github.com/emk/rust-buildpack-example-actix
