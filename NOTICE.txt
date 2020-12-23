@@ -1,4 +1,4 @@
 Copyright 2020 Dax Borde
 
-Licensed under the Affero General Public License (the "License");
+Licensed under the Affero General Public License v3 (the "License");
 you may not use this file except in compliance with the License.
