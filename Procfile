@@ -1,2 +1,2 @@
-web: ./target/release/actix-heroku-template
+web: ./target/release/wordlink
 
