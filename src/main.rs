@@ -19,6 +19,36 @@ mod model {
     }
 }
 
+mod helper {
+    use rand::{thread_rng};
+    use rand::distributions::{Distribution, Uniform};
+
+    const NUM_WORDS: usize = 4;
+    static FILE: &str = include_str!("../wordlist.txt");
+
+    pub fn get_words() -> String {
+        let wordvec: Vec<&str> = FILE.split_whitespace().collect();
+
+        // Longest word is 9 letters. Add spaces between each word as well.
+        let longest_possible = NUM_WORDS * 9 + (NUM_WORDS - 1);
+        let mut ret: String = String::with_capacity(longest_possible);
+
+        let mut rng = thread_rng();
+        let dist = Uniform::from(0..wordvec.len());
+
+        for w in 0..NUM_WORDS {
+            let word: &str = wordvec[dist.sample(&mut rng)];
+            ret.push_str(word);
+
+            if w < NUM_WORDS-1 {
+                ret.push(' ');
+            }
+        }
+
+        ret
+    }
+}
+
 use actix_web::{get, http, post, web, App, HttpResponse, HttpServer, Responder};
 use std::env;
 
@@ -38,7 +68,7 @@ async fn echo(mut req_body: web::Form<model::MainForm>) -> impl Responder {
 
     // TODO write your own unwrap function (or find one in actix)
     // that returns a 500 error code instead of crashing.
-    let response = model::PostedTemplate { content: query }
+    let response = model::PostedTemplate { content: format!("query:{}, response:{}", query, helper::get_words()) }
         .render_once()
         .unwrap();
 
