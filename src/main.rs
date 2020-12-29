@@ -95,6 +95,8 @@ async fn main() -> std::io::Result<()> {
         .parse()
         .expect("PORT must be a number");
 
+    println!("Starting server on port {}...", port);
+
     HttpServer::new(|| {
         App::new()
             .service(index)
