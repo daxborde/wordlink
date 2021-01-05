@@ -1,4 +1,5 @@
-CREATE TABLE IF NOT EXISTS temp (
+CREATE TABLE IF NOT EXISTS wordmap (
     id      SERIAL PRIMARY KEY,
-    ligma   TEXT NOT NULL
+    words   VARCHAR(40) NOT NULL,
+    link   TEXT NOT NULL
 );
