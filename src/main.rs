@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate sailfish_macros; // enable derive macros
 use sailfish::TemplateOnce;
+use sqlx::PgPool;
 
 mod model {
     use serde::{Deserialize, Serialize};
@@ -60,15 +61,19 @@ async fn index() -> impl Responder {
 }
 
 #[post("/echo")]
-async fn echo(mut req_body: web::Form<model::MainForm>) -> impl Responder {
+async fn echo(mut req_body: web::Form<model::MainForm>, db_pool: web::Data<PgPool>) -> impl Responder {
     // Consume the form to get the query. Avoids cloning the query unecessarily.
     // There is probably a better way to do this that I haven't found yet.
     let query = std::mem::replace(&mut req_body.query, String::new());
     // let query = req_body.query.clone();
 
+    let words = helper::get_words();
+
+    // let rec = sqlx::query("INSERT INTO temp ()")
+
     // TODO write your own unwrap function (or find one in actix)
     // that returns a 500 error code instead of crashing.
-    let response = model::PostedTemplate { content: format!("query:{}, response:{}", query, helper::get_words()) }
+    let response = model::PostedTemplate { content: format!("query:{}, response:{}", query, words) }
         .render_once()
         .unwrap();
 
@@ -84,10 +89,6 @@ async fn redir() -> impl Responder {
         .body("<a href=\"http://example.com/\">http://example.com/</a>")
 }
 
-async fn manual_hello() -> impl Responder {
-    HttpResponse::Ok().body("Hey there! How's it going?")
-}
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port: u16 = env::var("PORT")
@@ -95,14 +96,20 @@ async fn main() -> std::io::Result<()> {
         .parse()
         .expect("PORT must be a number");
 
+    
+
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL is not set");
+    let test: &str = &database_url;
+    let db_pool = PgPool::connect(&database_url).await.expect("Error opening postgres database.");
+
     println!("Starting server on port {}...", port);
 
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         App::new()
+            .data(db_pool.clone())
             .service(index)
             .service(echo)
             .service(redir)
-            .route("/hey", web::get().to(manual_hello))
     })
     .bind(format!("0.0.0.0:{}", port))?
     .run()
