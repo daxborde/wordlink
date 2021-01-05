@@ -21,8 +21,8 @@ mod model {
 }
 
 mod helper {
-    use rand::{thread_rng};
     use rand::distributions::{Distribution, Uniform};
+    use rand::thread_rng;
 
     const NUM_WORDS: usize = 4;
     static FILE: &str = include_str!("../wordlist.txt");
@@ -41,7 +41,7 @@ mod helper {
             let word: &str = wordvec[dist.sample(&mut rng)];
             ret.push_str(word);
 
-            if w < NUM_WORDS-1 {
+            if w < NUM_WORDS - 1 {
                 ret.push(' ');
             }
         }
@@ -61,7 +61,10 @@ async fn index() -> impl Responder {
 }
 
 #[post("/echo")]
-async fn echo(mut req_body: web::Form<model::MainForm>, db_pool: web::Data<PgPool>) -> impl Responder {
+async fn echo(
+    mut req_body: web::Form<model::MainForm>,
+    db_pool: web::Data<PgPool>,
+) -> impl Responder {
     // Consume the form to get the query. Avoids cloning the query unecessarily.
     // There is probably a better way to do this that I haven't found yet.
     let query = std::mem::replace(&mut req_body.query, String::new());
@@ -73,9 +76,11 @@ async fn echo(mut req_body: web::Form<model::MainForm>, db_pool: web::Data<PgPoo
 
     // TODO write your own unwrap function (or find one in actix)
     // that returns a 500 error code instead of crashing.
-    let response = model::PostedTemplate { content: format!("query:{}, response:{}", query, words) }
-        .render_once()
-        .unwrap();
+    let response = model::PostedTemplate {
+        content: format!("query:{}, response:{}", query, words),
+    }
+    .render_once()
+    .unwrap();
 
     HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
@@ -96,11 +101,11 @@ async fn main() -> std::io::Result<()> {
         .parse()
         .expect("PORT must be a number");
 
-    
-
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL is not set");
     let test: &str = &database_url;
-    let db_pool = PgPool::connect(&database_url).await.expect("Error opening postgres database.");
+    let db_pool = PgPool::connect(&database_url)
+        .await
+        .expect("Error opening postgres database.");
 
     println!("Starting server on port {}...", port);
 
