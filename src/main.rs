@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate sailfish_macros; // enable derive macros
 use sailfish::TemplateOnce;
-use sqlx::{PgPool, Row};
 use sqlx::postgres::PgRow;
+use sqlx::{PgPool, Row};
 
 mod model {
     use serde::{Deserialize, Serialize};
@@ -24,11 +24,19 @@ mod model {
 mod helper {
     use rand::distributions::{Distribution, Uniform};
     use rand::thread_rng;
+    use std::collections::HashSet;
 
     const NUM_WORDS: usize = 4;
     // Longest word is 9 letters. Add spaces between each word as well.
     const LONGEST: usize = NUM_WORDS * 9 + (NUM_WORDS - 1);
     static FILE: &str = include_str!("../wordlist.txt");
+
+    pub fn is_words(input: &str) -> bool {
+        let wordvec: HashSet<&str> = FILE.split_whitespace().collect();
+        input.split(' ').count() == NUM_WORDS
+            && !input.chars().any(|x| !x.is_alphabetic())
+            && !input.split(' ').any(|s| !wordvec.contains(s))
+    }
 
     pub fn get_words() -> String {
         let wordvec: Vec<&str> = FILE.split_whitespace().collect();
@@ -71,7 +79,6 @@ async fn newlink(
     mut req_body: web::Form<model::MainForm>,
     db_pool: web::Data<PgPool>,
 ) -> impl Responder {
-
     let map = WordMap {
         words: helper::get_words(),
         // Consume the form to get the query. Avoids cloning the query unecessarily.
@@ -80,17 +87,17 @@ async fn newlink(
     };
 
     let mut tx = db_pool.begin().await.unwrap();
-    let map: WordMap = sqlx::query("INSERT INTO wordmap (words, link) VALUES ($1, $2) RETURNING words, link")
-        .bind(&map.words)
-        .bind(&map.link)
-        .map(|row: PgRow| { 
-            WordMap {
-                words: row.get(0), 
+    let map: WordMap =
+        sqlx::query("INSERT INTO wordmap (words, link) VALUES ($1, $2) RETURNING words, link")
+            .bind(&map.words)
+            .bind(&map.link)
+            .map(|row: PgRow| WordMap {
+                words: row.get(0),
                 link: row.get(1),
-            }
-        })
-        .fetch_one(&mut tx)
-        .await.unwrap();
+            })
+            .fetch_one(&mut tx)
+            .await
+            .unwrap();
     tx.commit().await.unwrap();
 
     // TODO write your own unwrap function (or find one in actix)
