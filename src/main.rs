@@ -66,8 +66,8 @@ struct WordMap {
     link: String,
 }
 
-#[post("/echo")]
-async fn echo(
+#[post("/new")]
+async fn newlink(
     mut req_body: web::Form<model::MainForm>,
     db_pool: web::Data<PgPool>,
 ) -> impl Responder {
@@ -132,7 +132,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(db_pool.clone())
             .service(index)
-            .service(echo)
+            .service(newlink)
             .service(redir)
     })
     .bind(format!("0.0.0.0:{}", port))?
