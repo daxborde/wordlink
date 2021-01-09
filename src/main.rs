@@ -1,8 +1,5 @@
 #[macro_use]
 extern crate sailfish_macros; // enable derive macros
-use sailfish::TemplateOnce;
-use sqlx::postgres::PgRow;
-use sqlx::{PgPool, Row};
 
 mod model {
     use serde::{Deserialize, Serialize};
@@ -33,9 +30,13 @@ mod helper {
 
     pub fn is_words(input: &str) -> bool {
         let wordvec: HashSet<&str> = FILE.split_whitespace().collect();
-        input.split(' ').count() == NUM_WORDS
-            && !input.chars().any(|x| !x.is_alphabetic())
-            && !input.split(' ').any(|s| !wordvec.contains(s))
+        // let words = input.split(' ');
+        let result = input.split(' ').count() == NUM_WORDS
+            && !input
+                .split(' ')
+                .any(|word| word.chars().any(|x| !x.is_alphabetic()))
+            && !input.split(' ').any(|s| !wordvec.contains(s));
+        result
     }
 
     pub fn get_words() -> String {
@@ -59,7 +60,54 @@ mod helper {
     }
 }
 
+mod db {
+    use sqlx::postgres::PgRow;
+    use sqlx::{PgPool, Row};
+
+    use actix_web::web::Data;
+
+    pub struct WordMap {
+        pub words: String,
+        pub link: String,
+    }
+
+    pub async fn insert_wordmap(map: &WordMap, db_pool: Data<PgPool>) -> WordMap {
+        let mut tx = db_pool.begin().await.unwrap();
+        let map: WordMap =
+            sqlx::query("INSERT INTO wordmap (words, link) VALUES ($1, $2) RETURNING words, link")
+                .bind(&map.words)
+                .bind(&map.link)
+                .map(|row: PgRow| WordMap {
+                    words: row.get(0),
+                    link: row.get(1),
+                })
+                .fetch_one(&mut tx)
+                .await
+                .unwrap();
+        tx.commit().await.unwrap();
+        map
+    }
+
+    pub async fn query_words(words: &str, db_pool: Data<PgPool>) -> WordMap {
+        let mut tx = db_pool.begin().await.unwrap();
+
+        let map = sqlx::query_as!(
+            WordMap,
+            "SELECT words, link FROM wordmap WHERE words=$1",
+            words
+        )
+        .fetch_one(&mut tx)
+        .await
+        .unwrap();
+
+        tx.commit().await.unwrap();
+        map
+    }
+}
+
 use actix_web::{get, http, post, web, App, HttpResponse, HttpServer, Responder};
+use sailfish::TemplateOnce;
+use sqlx::PgPool;
 use std::env;
 
 #[get("/")]
@@ -69,41 +117,32 @@ async fn index() -> impl Responder {
         .body(include_str!("../templates/index.html"))
 }
 
-struct WordMap {
-    words: String,
-    link: String,
-}
-
 #[post("/new")]
 async fn newlink(
-    mut req_body: web::Form<model::MainForm>,
+    req_body: web::Form<model::MainForm>,
     db_pool: web::Data<PgPool>,
 ) -> impl Responder {
-    let map = WordMap {
-        words: helper::get_words(),
-        // Consume the form to get the query. Avoids cloning the query unecessarily.
-        // There is probably a better way to do this that I haven't found yet.
-        link: std::mem::replace(&mut req_body.query, String::new()),
-    };
+    let query = req_body.query.trim();
 
-    let mut tx = db_pool.begin().await.unwrap();
-    let map: WordMap =
-        sqlx::query("INSERT INTO wordmap (words, link) VALUES ($1, $2) RETURNING words, link")
-            .bind(&map.words)
-            .bind(&map.link)
-            .map(|row: PgRow| WordMap {
-                words: row.get(0),
-                link: row.get(1),
-            })
-            .fetch_one(&mut tx)
-            .await
-            .unwrap();
-    tx.commit().await.unwrap();
+    let final_map = if helper::is_words(&query) {
+        db::WordMap {
+            words: "test".to_string(),
+            link: "testlink".to_string(),
+        }
+    } else {
+        let map = db::WordMap {
+            words: helper::get_words(),
+
+            link: query.to_string(),
+        };
+
+        db::insert_wordmap(&map, db_pool).await
+    };
 
     // TODO write your own unwrap function (or find one in actix)
     // that returns a 500 error code instead of crashing.
     let response = model::PostedTemplate {
-        content: format!("link:{}, words:{}", map.link, map.words),
+        content: format!("link:{}, words:{}", final_map.link, final_map.words),
     }
     .render_once()
     .unwrap();
