@@ -124,11 +124,8 @@ async fn newlink(
 ) -> impl Responder {
     let query = req_body.query.trim();
 
-    let final_map = if helper::is_words(&query) {
-        db::WordMap {
-            words: "test".to_string(),
-            link: "testlink".to_string(),
-        }
+    let (final_map, _is_query): (db::WordMap, bool) = if helper::is_words(query) {
+        (db::query_words(query, db_pool).await, true)
     } else {
         let map = db::WordMap {
             words: helper::get_words(),
@@ -136,7 +133,7 @@ async fn newlink(
             link: query.to_string(),
         };
 
-        db::insert_wordmap(&map, db_pool).await
+        (db::insert_wordmap(&map, db_pool).await, false)
     };
 
     // TODO write your own unwrap function (or find one in actix)
