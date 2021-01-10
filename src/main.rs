@@ -106,6 +106,7 @@ mod db {
 }
 
 use actix_web::{get, http, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_files as fs;
 use sailfish::TemplateOnce;
 use sqlx::PgPool;
 use std::env;
@@ -177,6 +178,7 @@ async fn main() -> std::io::Result<()> {
             .service(index)
             .service(newlink)
             .service(redir)
+            .service(fs::Files::new("/styles", "./styles"))
     })
     .bind(format!("0.0.0.0:{}", port))?
     .run()
