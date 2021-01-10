@@ -111,13 +111,6 @@ use sailfish::TemplateOnce;
 use sqlx::PgPool;
 use std::env;
 
-#[get("/")]
-async fn index() -> impl Responder {
-    HttpResponse::Ok()
-        .content_type("text/html; charset=utf-8")
-        .body(include_str!("../templates/index.html"))
-}
-
 #[post("/new")]
 async fn newlink(
     req_body: web::Form<model::MainForm>,
@@ -175,10 +168,9 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .data(db_pool.clone())
-            .service(index)
+            .service(fs::Files::new("/", "static/").index_file("index.html"))
             .service(newlink)
             .service(redir)
-            .service(fs::Files::new("/styles", "./styles"))
     })
     .bind(format!("0.0.0.0:{}", port))?
     .run()
