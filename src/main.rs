@@ -75,6 +75,7 @@ mod db {
 
     use actix_web::web::Data;
 
+    #[derive(sqlx::FromRow)]
     pub struct WordMap {
         pub words: String,
         pub link: String,
@@ -100,11 +101,8 @@ mod db {
     pub async fn query_words(words: &str, db_pool: Data<PgPool>) -> WordMap {
         let mut tx = db_pool.begin().await.unwrap();
 
-        let map = sqlx::query_as!(
-            WordMap,
-            "SELECT words, link FROM wordmap WHERE words=$1",
-            words
-        )
+        let map: WordMap = sqlx::query_as("SELECT words, link FROM wordmap WHERE words=$1")
+        .bind(words)
         .fetch_one(&mut tx)
         .await
         .unwrap();
