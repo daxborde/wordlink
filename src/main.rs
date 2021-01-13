@@ -16,6 +16,14 @@ mod model {
     pub struct PostedTemplate {
         pub content: String,
     }
+
+    // Query Successful Template
+    #[derive(TemplateOnce)]
+    #[template(path = "query.stpl")]
+    pub struct QueryTemplate {
+        pub link: String,
+        pub words: String,
+    }
 }
 
 mod helper {
@@ -118,29 +126,36 @@ async fn newlink(
 ) -> impl Responder {
     let query = req_body.query.trim();
 
-    let (final_map, _is_query): (db::WordMap, bool) = if helper::is_words(query) {
-        (db::query_words(query, db_pool).await, true)
+    let rendered = if helper::is_words(query) {
+        let final_map = db::query_words(query, db_pool).await;
+
+        model::QueryTemplate {
+            link: final_map.link,
+            words: final_map.words,
+        }
+        .render_once()
+        .unwrap()
     } else {
         let map = db::WordMap {
             words: helper::get_words(),
-
             link: query.to_string(),
         };
 
-        (db::insert_wordmap(&map, db_pool).await, false)
-    };
+        let final_map = db::insert_wordmap(&map, db_pool).await;
 
-    // TODO write your own unwrap function (or find one in actix)
-    // that returns a 500 error code instead of crashing.
-    let response = model::PostedTemplate {
-        content: format!("link:{}, words:{}", final_map.link, final_map.words),
-    }
-    .render_once()
-    .unwrap();
+        // TODO write your own unwrap function (or find one in actix)
+        // that returns a 500 error code instead of crashing when rendering the
+        // template fails.
+        model::PostedTemplate {
+            content: format!("link:{}, words:{}", final_map.link, final_map.words)
+        }
+        .render_once()
+        .unwrap()
+    };
 
     HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
-        .body(response)
+        .body(rendered)
 }
 
 #[get("/redir")]
