@@ -8,9 +8,9 @@
 <body>
     <h1>Query Results</h1>
     <h2>Link</h2>
-    <p> <a href=<%= link %>> <%= link %> </a> </p>
+    <p> <a autofocus href=<%= link %>> <%= link %> </a> </p>
     <h2>Words</h2>
     <p> <%= words %> </p>
-    <a href="/" autofocus>Go Back</a>
+    <a href="/">Go Back</a>
 </body>
 </html>
