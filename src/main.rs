@@ -10,13 +10,6 @@ mod model {
         pub query: String,
     }
 
-    // Response Template
-    #[derive(TemplateOnce)]
-    #[template(path = "posted.stpl")]
-    pub struct PostedTemplate {
-        pub content: String,
-    }
-
     // Query Successful Template
     #[derive(TemplateOnce)]
     #[template(path = "query.stpl")]
@@ -25,6 +18,7 @@ mod model {
         pub words: String,
     }
 
+    // Insert new link Template
     #[derive(TemplateOnce)]
     #[template(path = "insert.stpl")]
     pub struct InsertTemplate {
