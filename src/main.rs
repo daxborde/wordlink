@@ -24,6 +24,13 @@ mod model {
         pub link: String,
         pub words: String,
     }
+
+    #[derive(TemplateOnce)]
+    #[template(path = "insert.stpl")]
+    pub struct InsertTemplate {
+        pub words: String,
+        pub link: String,
+    }
 }
 
 mod helper {
@@ -146,8 +153,9 @@ async fn newlink(
         // TODO write your own unwrap function (or find one in actix)
         // that returns a 500 error code instead of crashing when rendering the
         // template fails.
-        model::PostedTemplate {
-            content: format!("link:{}, words:{}", final_map.link, final_map.words)
+        model::InsertTemplate {
+            link: final_map.link, 
+            words: final_map.words,
         }
         .render_once()
         .unwrap()

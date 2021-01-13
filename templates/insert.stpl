@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>wordlink insert</title>
+</head>
+<body>
+    <h1>Insert Results</h1>
+    <h2>Words</h2>
+    <p> <%= words %> </p>
+    <h2>Link</h2>
+    <p> <a href=<%= link %>> <%= link %> </a> </p>
+    <a href="/" autofocus>Go Back</a>
+</body>
+</html>
