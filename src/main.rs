@@ -113,7 +113,7 @@ mod db {
     }
 }
 
-use actix_web::{get, http, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, http, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_files as fs;
 use sailfish::TemplateOnce;
 use sqlx::PgPool;
@@ -165,6 +165,11 @@ async fn redir() -> impl Responder {
         .body("<a href=\"http://example.com/\">http://example.com/</a>")
 }
 
+#[get("/")]
+async fn index(req: HttpRequest) -> impl Responder {
+    fs::NamedFile::open("static/index.html")?.into_response(&req)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let port: u16 = env::var("PORT")
@@ -183,7 +188,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .data(db_pool.clone())
-            .service(fs::Files::new("/", "static/").index_file("index.html"))
+            .service(index)
+            .service(fs::Files::new("/static", "static/").index_file("index.html"))
             .service(newlink)
             .service(redir)
     })
