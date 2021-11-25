@@ -1,0 +1,16 @@
+version: "2.4"
+services:
+  db:
+    image: postgres:14
+    env_file:
+      - .env
+    ports:
+      - "${WL_POSTGRES_PORT:-5432}:5432"
+    expose:
+      - "${WL_POSTGRES_PORT:-5432}"
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
