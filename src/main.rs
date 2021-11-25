@@ -102,18 +102,18 @@ mod db {
         let mut tx = db_pool.begin().await.unwrap();
 
         let map: WordMap = sqlx::query_as("SELECT words, link FROM wordmap WHERE words=$1")
-        .bind(words)
-        .fetch_one(&mut tx)
-        .await
-        .unwrap();
+            .bind(words)
+            .fetch_one(&mut tx)
+            .await
+            .unwrap();
 
         tx.commit().await.unwrap();
         map
     }
 }
 
-use actix_web::{get, http, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_files as fs;
+use actix_web::{get, http, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use sailfish::TemplateOnce;
 use sqlx::PgPool;
 use std::env;
@@ -146,7 +146,7 @@ async fn newlink(
         // that returns a 500 error code instead of crashing when rendering the
         // template fails.
         model::InsertTemplate {
-            link: final_map.link, 
+            link: final_map.link,
             words: final_map.words,
         }
         .render_once()
