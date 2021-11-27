@@ -115,13 +115,13 @@ mod db {
 use actix_files as fs;
 use actix_web::{get, http, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use sailfish::TemplateOnce;
-use sqlx::PgPool;
+use sqlx::{PgPool, Pool, Postgres};
 use std::env;
 
 #[post("/new")]
 async fn newlink(
     req_body: web::Form<model::MainForm>,
-    db_pool: web::Data<PgPool>,
+    db_pool: web::Data<Pool<Postgres>>,
 ) -> impl Responder {
     let query = req_body.query.trim();
 
@@ -178,10 +178,7 @@ async fn main() -> std::io::Result<()> {
         .expect("PORT must be a number");
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL is not set");
-    // let test: &str = &database_url;
-    let db_pool = PgPool::connect(&database_url)
-        .await
-        .expect("Error opening postgres database.");
+    let db_pool = connect_and_test_db(&database_url).await;
 
     println!("Starting server on port {}...", port);
 
@@ -196,4 +193,43 @@ async fn main() -> std::io::Result<()> {
     .bind(format!("0.0.0.0:{}", port))?
     .run()
     .await
+}
+
+async fn connect_and_test_db(database_url: &str) -> Pool<Postgres> {
+    let db_pool_mut = match PgPool::connect(database_url).await {
+        Ok(x) => x,
+        Err(e) => panic!(
+            "Opening the database failed.\n\
+            Please check that the DB is running and that DATABASE_URL is correct.\n\
+            My current value for DATABASE_URL is {}\n\
+            Additional info: {}",
+            database_url, e
+        ),
+    };
+    let db_pool = &db_pool_mut;
+
+    let _result: (i64,) = match sqlx::query_as("SELECT $1")
+        .bind(567_i64)
+        .fetch_one(db_pool)
+        .await
+    {
+        Ok(x) => x,
+        Err(e) => panic!(
+            "DB was opened, but failed on a basic query.\n\
+            Please check that the DB is running and that DATABASE_URL is correct.\n\
+            My current value for DATABASE_URL is {}\n\
+            Additional info: {}",
+            database_url, e
+        ),
+    };
+
+    match sqlx::query("SELECT * FROM wordmap")
+        .fetch_optional(db_pool)
+        .await
+    {
+        Ok(_) => {}
+        Err(_) => todo!(), // create_wordmap_table(db_pool).await
+    };
+
+    db_pool_mut
 }
