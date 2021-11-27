@@ -228,8 +228,31 @@ async fn connect_and_test_db(database_url: &str) -> Pool<Postgres> {
         .await
     {
         Ok(_) => {}
-        Err(_) => todo!(), // create_wordmap_table(db_pool).await
+        Err(_) => create_wordmap_table(db_pool).await,
     };
 
     db_pool_mut
+}
+
+async fn create_wordmap_table(db_pool: &Pool<Postgres>) {
+    match sqlx::query(
+        "
+CREATE TABLE IF NOT EXISTS wordmap (
+    id      SERIAL PRIMARY KEY,
+    words   VARCHAR(40) NOT NULL,
+    link    TEXT NOT NULL
+);
+    ",
+    )
+    .fetch_optional(db_pool)
+    .await
+    {
+        Ok(_) => {}
+        Err(e) => panic!(
+            "Database was opened, but the \"wordmap\" table was not found, and creating it failed.\n\
+            Check that the database being used is Postgres and is not in an error state.\n\
+            Additional info: {}",
+            e
+        ),
+    }
 }
